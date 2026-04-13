@@ -6,7 +6,7 @@ Petra Telecom customer churn dataset.
 
 Run: python lab_regression.py
 """
-
+# library is done
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
@@ -14,7 +14,8 @@ from sklearn.linear_model import LogisticRegression, Ridge, Lasso
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import (classification_report, confusion_matrix,
-                             mean_absolute_error, r2_score)
+                             mean_absolute_error, r2_score ,
+                             accuracy_score, precision_score, recall_score, f1_score)
 
 
 def load_data(filepath="data/telecom_churn.csv"):
@@ -24,7 +25,14 @@ def load_data(filepath="data/telecom_churn.csv"):
         DataFrame with all columns.
     """
     # TODO: Load the CSV and return the DataFrame
-    pass
+    try:
+        df = pd.read_csv(filepath)
+        print(f"Shape: {df.shape}")
+        print(f"Churn distribution:\n{df['churned'].value_counts(normalize=True)}")
+        return df
+    except FileNotFoundError:
+        print("Error: File not found.")
+        return None
 
 
 def split_data(df, target_col, test_size=0.2, random_state=42):
@@ -40,7 +48,14 @@ def split_data(df, target_col, test_size=0.2, random_state=42):
         Tuple of (X_train, X_test, y_train, y_test).
     """
     # TODO: Separate features and target, then split with stratification
-    pass
+    X = df.drop(columns=[target_col])
+    y = df[target_col]
+    
+    stratify_param = y if target_col == "churned" else None
+    
+    return train_test_split(
+        X, y, test_size=test_size, random_state=random_state, stratify=stratify_param
+    )
 
 
 def build_logistic_pipeline():
@@ -50,7 +65,10 @@ def build_logistic_pipeline():
         sklearn Pipeline object.
     """
     # TODO: Create and return a Pipeline with two steps
-    pass
+    return Pipeline([
+        ('scaler', StandardScaler()),
+        ('model', LogisticRegression(random_state=42, max_iter=1000, class_weight="balanced"))
+    ])
 
 
 def build_ridge_pipeline():
@@ -60,7 +78,10 @@ def build_ridge_pipeline():
         sklearn Pipeline object.
     """
     # TODO: Create and return a Pipeline for Ridge regression
-    pass
+    return Pipeline([
+        ('scaler', StandardScaler()),
+        ('model', Ridge(alpha=1.0))
+    ])
 
 
 def evaluate_classifier(pipeline, X_train, X_test, y_train, y_test):
@@ -75,7 +96,11 @@ def evaluate_classifier(pipeline, X_train, X_test, y_train, y_test):
         Dictionary with keys: 'accuracy', 'precision', 'recall', 'f1'.
     """
     # TODO: Fit the pipeline on training data, predict on test, compute metrics
-    pass
+    pipeline.fit(X_train, y_train)
+    y_pred = pipeline.predict(X_test)
+    
+    
+
 
 
 def evaluate_regressor(pipeline, X_train, X_test, y_train, y_test):
@@ -90,7 +115,7 @@ def evaluate_regressor(pipeline, X_train, X_test, y_train, y_test):
         Dictionary with keys: 'mae', 'r2'.
     """
     # TODO: Fit the pipeline, predict, and compute MAE and R²
-    pass
+    
 
 
 def run_cross_validation(pipeline, X_train, y_train, cv=5):
@@ -106,7 +131,9 @@ def run_cross_validation(pipeline, X_train, y_train, cv=5):
         Array of cross-validation scores.
     """
     # TODO: Run cross_val_score with StratifiedKFold
-    pass
+    cv_splitter = StratifiedKFold(n_splits=cv, shuffle=True, random_state=42)
+    return cross_val_score(pipeline, X_train, y_train, cv=cv_splitter, scoring="accuracy")
+
 
 
 if __name__ == "__main__":
