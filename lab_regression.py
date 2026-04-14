@@ -28,13 +28,11 @@ def load_data(filepath="data/telecom_churn.csv"):
     try:
         df = pd.read_csv(filepath)
         print(f"Shape: {df.shape}")
-        print(f"Churn distribution:\n{df['churned'].value_counts(normalize=True)}")
         return df
     except FileNotFoundError:
         print("Error: File not found.")
         return None
-
-
+    
 def split_data(df, target_col, test_size=0.2, random_state=42):
     """Split data into train and test sets with stratification.
 
@@ -50,13 +48,8 @@ def split_data(df, target_col, test_size=0.2, random_state=42):
     # TODO: Separate features and target, then split with stratification
     X = df.drop(columns=[target_col])
     y = df[target_col]
-    
     stratify_param = y if target_col == "churned" else None
-    
-    return train_test_split(
-        X, y, test_size=test_size, random_state=random_state, stratify=stratify_param
-    )
-
+    return train_test_split(X, y, test_size=test_size, random_state=random_state, stratify=stratify_param)
 
 def build_logistic_pipeline():
     """Build a Pipeline with StandardScaler and LogisticRegression.
@@ -69,7 +62,7 @@ def build_logistic_pipeline():
         ('scaler', StandardScaler()),
         ('model', LogisticRegression(random_state=42, max_iter=1000, class_weight="balanced"))
     ])
-
+ 
 
 def build_ridge_pipeline():
     """Build a Pipeline with StandardScaler and Ridge regression.
@@ -81,8 +74,13 @@ def build_ridge_pipeline():
     return Pipeline([
         ('scaler', StandardScaler()),
         ('model', Ridge(alpha=1.0))
-    ])
+    ]) 
 
+def build_lasso_pipeline():
+    return Pipeline([
+        ('scaler', StandardScaler()),
+        ('model', Lasso(alpha=0.1))
+    ])
 
 def evaluate_classifier(pipeline, X_train, X_test, y_train, y_test):
     """Train the pipeline and return classification metrics.
@@ -96,12 +94,20 @@ def evaluate_classifier(pipeline, X_train, X_test, y_train, y_test):
         Dictionary with keys: 'accuracy', 'precision', 'recall', 'f1'.
     """
     # TODO: Fit the pipeline on training data, predict on test, compute metrics
+    
     pipeline.fit(X_train, y_train)
+    
     y_pred = pipeline.predict(X_test)
     
+    print("\nClassification Report:")
+    print(classification_report(y_test, y_pred))
+    return {
+        "accuracy": accuracy_score(y_test, y_pred),
+        "precision": precision_score(y_test, y_pred),
+        "recall": recall_score(y_test, y_pred),
+        "f1": f1_score(y_test, y_pred)
+    }
     
-
-
 
 def evaluate_regressor(pipeline, X_train, X_test, y_train, y_test):
     """Train the pipeline and return regression metrics.
@@ -115,7 +121,14 @@ def evaluate_regressor(pipeline, X_train, X_test, y_train, y_test):
         Dictionary with keys: 'mae', 'r2'.
     """
     # TODO: Fit the pipeline, predict, and compute MAE and R²
+    pipeline.fit(X_train, y_train)
     
+    y_pred = pipeline.predict(X_test)
+    
+    return {
+        "mae": mean_absolute_error(y_test, y_pred),
+        "r2": r2_score(y_test, y_pred)
+    }
 
 
 def run_cross_validation(pipeline, X_train, y_train, cv=5):
@@ -133,8 +146,13 @@ def run_cross_validation(pipeline, X_train, y_train, cv=5):
     # TODO: Run cross_val_score with StratifiedKFold
     cv_splitter = StratifiedKFold(n_splits=cv, shuffle=True, random_state=42)
     return cross_val_score(pipeline, X_train, y_train, cv=cv_splitter, scoring="accuracy")
-
-
+def compare_coefficients(ridge_pipe, lasso_pipe, feature_names):
+    ridge_coefs = ridge_pipe.named_steps['model'].coef_
+    lasso_coefs = lasso_pipe.named_steps['model'].coef_
+    print("\nCoefficients Comparison (Ridge vs Lasso):")
+    df_coef = pd.DataFrame({'Feature': feature_names, 'Ridge': ridge_coefs, 'Lasso': lasso_coefs})
+    print(df_coef)
+  
 
 if __name__ == "__main__":
     df = load_data()
