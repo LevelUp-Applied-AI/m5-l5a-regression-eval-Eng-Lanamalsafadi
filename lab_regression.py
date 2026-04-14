@@ -9,6 +9,7 @@ Run: python lab_regression.py
 # library is done
 import pandas as pd
 import numpy as np
+import os
 from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
 from sklearn.linear_model import LogisticRegression, Ridge, Lasso
 from sklearn.preprocessing import StandardScaler
@@ -17,22 +18,31 @@ from sklearn.metrics import (classification_report, confusion_matrix,
                              mean_absolute_error, r2_score ,
                              accuracy_score, precision_score, recall_score, f1_score)
 
-
 def load_data(filepath="data/telecom_churn.csv"):
-    """Load the telecom churn dataset.
+    """
+    Load the telecom churn dataset.
 
     Returns:
         DataFrame with all columns.
     """
-    # TODO: Load the CSV and return the DataFrame
     try:
-        df = pd.read_csv(filepath)
-        print(f"Shape: {df.shape}")
+        if os.path.exists(filepath):
+            path = filepath
+        elif os.path.exists(os.path.join("starter", "data", "telecom_churn.csv")):
+            path = os.path.join("starter", "data", "telecom_churn.csv")
+        elif os.path.exists("data/telecom_churn.csv"):
+            path = "data/telecom_churn.csv"
+        else:
+            print("Error: telecom_churn.csv not found")
+            return None
+
+        df = pd.read_csv(path)
         return df
-    except FileNotFoundError:
-        print("Error: File not found.")
+
+    except Exception as e:
+        print(f"Error loading data: {e}")
         return None
-    
+
 def split_data(df, target_col, test_size=0.2, random_state=42):
     """Split data into train and test sets with stratification.
 
